@@ -54,8 +54,16 @@ THE SOFTWARE.
           <f:readOnlyTextbox />
         </f:entry>
         
-        <f:entry title="${%Uptime}">
-          <f:readOnlyTextbox value="${it.uptimeString}"/>
+        <f:entry title="${%Uptime Duration}">
+          <f:readOnlyTextbox value="${it.uptimeDurationString}"/>
+        </f:entry>
+
+        <f:entry title="${%Run Duration}">
+          <f:readOnlyTextbox value="${it.runDurationString}"/>
+        </f:entry>
+
+        <f:entry title="${%Idle Duration}">
+          <f:readOnlyTextbox value="${it.idleDurationString}"/>
         </f:entry>
 
         <f:entry title="${%Public DNS}" field="publicDNS">

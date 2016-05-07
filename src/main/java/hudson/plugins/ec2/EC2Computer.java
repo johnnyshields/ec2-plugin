@@ -43,10 +43,21 @@ import com.amazonaws.services.ec2.model.Instance;
  * @author Kohsuke Kawaguchi
  */
 public class EC2Computer extends SlaveComputer {
+
     /**
      * Cached description of this EC2 instance. Lazily fetched.
      */
     private volatile Instance ec2InstanceDescription;
+
+    /**
+     * System time when instance entered running state.
+     */
+    private long runningStartMilliseconds = 0;
+
+    /**
+     * System time when instance entered stopped state.
+     */
+    private long stoppedStartMilliseconds = 0;
 
     public EC2Computer(EC2AbstractSlave slave) {
         super(slave);
@@ -127,17 +138,97 @@ public class EC2Computer extends SlaveComputer {
     }
 
     /**
-     * Number of milli-secs since the instance was started.
+     *
      */
-    public long getUptime() throws AmazonClientException, InterruptedException {
-        return System.currentTimeMillis() - describeInstance().getLaunchTime().getTime();
+    public void onStateRunning(long milliseconds) {
+        this.runningStartMilliseconds = System.currentTimeMillis();
+        this.stoppedStartMilliseconds = 0
+    }
+
+    /**
+     *
+     */
+    public void onStateStopped(long milliseconds) {
+        this.runningStartMilliseconds = 0;
+        this.stoppedStartMilliseconds = System.currentTimeMillis();
+    }
+
+    /**
+     * Number of milliseconds since the instance was started.
+     */
+    public long getUptimeStartMilliseconds() throws AmazonClientException, InterruptedException {
+        return describeInstance().getLaunchTime().getTime();
+    }
+
+    /**
+     * Number of milliseconds since the instance was started.
+     */
+    public long getUptimeDurationMilliseconds() throws AmazonClientException, InterruptedException {
+        return System.currentTimeMillis() - getUptimeStartMilliseconds();
     }
 
     /**
      * Returns uptime in the human readable form.
      */
-    public String getUptimeString() throws AmazonClientException, InterruptedException {
-        return Util.getTimeSpanString(getUptime());
+    public String getUptimeDurationString() throws AmazonClientException, InterruptedException {
+        return Util.getTimeSpanString(getUptimeDurationMilliseconds());
+    }
+
+    /**
+     * Returns uptime in the human readable form.
+     */
+    public long getRunningStartMilliseconds() {
+        return this.runningStartMilliseconds;
+    }
+
+    /**
+     *
+     */
+    public long getRunningDurationMilliseconds() {
+        return (getRunningStartMilliseconds() == 0) ? 0 : System.currentTimeMillis() - getRunningStartMilliseconds();
+    }
+
+    /**
+     *
+     */
+    public String getRunningDurationString() {
+        return Util.getTimeSpanString(getRunningDurationMilliseconds());
+    }
+
+    /**
+     *
+     */
+    public long getStoppedStartMilliseconds() {
+        return this.stoppedStartMilliseconds;
+    }
+
+    /**
+     *
+     */
+    public long getStoppedDurationMilliseconds() {
+        return (getStoppedStartMilliseconds() == 0) ? 0 : System.currentTimeMillis() - getStoppedStartMilliseconds();
+    }
+
+    /**
+     *
+     */
+    public String getStoppedDurationString() {
+        return Util.getTimeSpanString(getStoppedDurationMilliseconds());
+    }
+
+    /**
+     * Milliseconds since the instance became idle. If instance is busy, this will return a
+     * negative value indicating when the instance is expected to be free.
+     */
+    public long getIdleDurationMilliseconds() {
+        return System.currentTimeMillis() - getIdleStartMilliseconds();
+    }
+
+    /**
+     * Returns idle time in the human readable form.
+     */
+    public String getIdleDurationString() {
+        return Util.getTimeSpanString(getIdleDurationMilliseconds());
     }
 
     private Instance _describeInstance() throws AmazonClientException, InterruptedException {
